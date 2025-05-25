@@ -1,9 +1,17 @@
 import { Graphics } from 'pixi.js';
 
 export class MazeCell extends Graphics {
+    /**
+     * @param colorKey The key of the color in COLOR_SHADES (e.g. "YELLOW")
+     * @param shadeIndex The index in the shades array (0-5)
+     * @param size Size of the cell
+     * @param x X position
+     * @param y Y Position
+     */
     constructor(
-        public size: number,
-        public color: number = 0xFFFFFF,
+        public shades: number[],
+        public shadeIndex: number = 0,
+        public size: number = 40,
         x: number = 0,
         y: number = 0
     ) {
@@ -15,11 +23,17 @@ export class MazeCell extends Graphics {
     private drawCell() {
         this.clear();
         this.rect(0, 0, this.size, this.size);
-        this.fill(this.color);
+        const color = this.shades[this.shadeIndex] ?? 0xFFFFFF;
+        this.fill({ color });
     }
 
-    public setColor(color: number) {
-        this.color = color;
+    public setColorKey(shades: number[]) {
+        this.shades = shades;
+        this.drawCell();
+    }
+
+    public setShadeIndex(shadeIndex: number) {
+        this.shadeIndex = shadeIndex;
         this.drawCell();
     }
 

@@ -7,9 +7,9 @@ import { Container } from "pixi.js";
 import { engine } from "../../getEngine";
 import { PausePopup } from "../../popups/PausePopup";
 import { SettingsPopup } from "../../popups/SettingsPopup";
-import { Button } from "../../ui/Button";
+import { generateMaze } from "../../utils/MazeGenerator";
+import { COLOR_SHADES } from "../../utils/ColorPalette";
 
-import { Bouncer } from "./Bouncer";
 import { MazeCell } from "./MazeCell";
 
 /** The screen that holds the app */
@@ -18,22 +18,41 @@ export class MainScreen extends Container {
   public static assetBundles = ["main"];
 
   public mainContainer: Container;
-  private pauseButton: FancyButton;
   private settingsButton: FancyButton;
-  private addButton: FancyButton;
-  private removeButton: FancyButton;
-  private bouncer: Bouncer;
   private paused = false;
+  private mazePixelWidth = 0;
+  private mazePixelHeight = 0;
 
   constructor() {
     super();
 
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
-    this.bouncer = new Bouncer();
 
-    const cell = new MazeCell(50, 0xffa500, 200, 200);
-    this.mainContainer.addChild(cell);
+    // --- Maze generation and display ---
+    const maze = generateMaze(15, 21); // width, height
+    const cellSize = 32;
+    for (let y = 0; y < maze.length; y++) {
+      for (let x = 0; x < maze[0].length; x++) {
+        const type = maze[y][x];
+        const colorShades =
+          type === "wall"
+            ? COLOR_SHADES.DARK_GRAY
+            : COLOR_SHADES.YELLOW_GREEN;
+        const shadeIndex = type === "wall" ? 0 : 0;
+        const cell = new MazeCell(
+          colorShades,
+          shadeIndex,
+          cellSize,
+          x * cellSize,
+          y * cellSize,
+        );
+        this.mainContainer.addChild(cell);
+      }
+    }
+
+    this.mazePixelWidth = maze[0].length * cellSize;
+    this.mazePixelHeight = maze.length * cellSize;
 
     const buttonAnimations = {
       hover: {
@@ -49,15 +68,6 @@ export class MainScreen extends Container {
         duration: 100,
       },
     };
-    this.pauseButton = new FancyButton({
-      defaultView: "icon-pause.png",
-      anchor: 0.5,
-      animations: buttonAnimations,
-    });
-    this.pauseButton.onPress.connect(() =>
-      engine().navigation.presentPopup(PausePopup),
-    );
-    this.addChild(this.pauseButton);
 
     this.settingsButton = new FancyButton({
       defaultView: "icon-settings.png",
@@ -68,22 +78,6 @@ export class MainScreen extends Container {
       engine().navigation.presentPopup(SettingsPopup),
     );
     this.addChild(this.settingsButton);
-
-    this.addButton = new Button({
-      text: "Add",
-      width: 275,
-      height: 110,
-    });
-    this.addButton.onPress.connect(() => this.bouncer.add());
-    this.addChild(this.addButton);
-
-    this.removeButton = new Button({
-      text: "Remove",
-      width: 175,
-      height: 110,
-    });
-    this.removeButton.onPress.connect(() => this.bouncer.remove());
-    this.addChild(this.removeButton);
   }
 
   /** Prepare the screen just before showing */
@@ -93,7 +87,6 @@ export class MainScreen extends Container {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public update(_time: Ticker) {
     if (this.paused) return;
-    this.bouncer.update();
   }
 
   /** Pause gameplay - automatically fired when a popup is presented */
@@ -113,21 +106,12 @@ export class MainScreen extends Container {
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
-    const centerX = width * 0.5;
-    const centerY = height * 0.5;
+    // Center the maze
+    this.mainContainer.x = (width - this.mazePixelWidth) / 2;
+    this.mainContainer.y = (height - this.mazePixelHeight) / 2;
 
-    this.mainContainer.x = centerX;
-    this.mainContainer.y = centerY;
-    this.pauseButton.x = 30;
-    this.pauseButton.y = 30;
     this.settingsButton.x = width - 30;
     this.settingsButton.y = 30;
-    this.removeButton.x = width / 2 - 100;
-    this.removeButton.y = height - 75;
-    this.addButton.x = width / 2 + 100;
-    this.addButton.y = height - 75;
-
-    this.bouncer.resize(width, height);
   }
 
   /** Show screen with animations */
@@ -135,10 +119,7 @@ export class MainScreen extends Container {
     engine().audio.bgm.play("main/sounds/bgm-main.mp3", { volume: 0.5 });
 
     const elementsToAnimate = [
-      this.pauseButton,
       this.settingsButton,
-      this.addButton,
-      this.removeButton,
     ];
 
     let finalPromise!: AnimationPlaybackControls;
@@ -152,7 +133,6 @@ export class MainScreen extends Container {
     }
 
     await finalPromise;
-    this.bouncer.show(this);
   }
 
   /** Hide screen with animations */
