@@ -29,7 +29,7 @@ export class MazeCell extends Graphics {
     private drawCell() {
         this.clear();
         this.rect(0, 0, this.size, this.size);
-        const color = this.shades[this.shadeIndex] ?? 0xffffff;
+        const color = this.shades[this.shadeIndex];
         this.fill({ color });
     }
 

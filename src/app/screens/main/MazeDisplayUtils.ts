@@ -50,7 +50,7 @@ export function generateAndDisplayMaze(
       );
       cell.interactive = type !== "wall";
       if (type !== "wall") {
-        cell.on("pointertap", () => mainScreen.handleCellClick(cell, x, y));
+        mainScreen.setupCellInteractions(cell, x, y);
       }
       mainScreen.mainContainer.addChild(cell);
       mainScreen.cellGroups[y][x] = cell;

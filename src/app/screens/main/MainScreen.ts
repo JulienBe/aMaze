@@ -11,6 +11,9 @@ import { COLOR_SHADES } from "../../utils/ColorPalette";
 import { MazeCell } from "./MazeCell";
 import { MazeRevealer } from "./MazeRevealPatterns";
 import { generateAndDisplayMaze } from "./MazeDisplayUtils";
+import { EntryExitAnimator } from "./EntryExitAnimator";
+import { findShortestPath } from "./PathUtils";
+import { PathAnimator } from "./PathAnimator";
 
 /** The screen that holds the app */
 export class MainScreen extends Container {
@@ -83,32 +86,36 @@ export class MainScreen extends Container {
     cell.groupId = groupId;
     cell.setColorKey(shades);
 
-    // --- SPECIAL: Check if entry and exit are connected ---
-    const entryCell = this.cellGroups[1][0];
-    const exitCell = this.cellGroups[this.cellGroups.length - 2][this.cellGroups[0].length - 1];
-    if (
-      entryCell.groupId !== null &&
-      entryCell.groupId === exitCell.groupId
-    ) {
-      this.onPathConnected(entryCell.groupId, shades);
-    }
+    this.checkEntryExitConnection();
   };
 
-  private onPathConnected(groupId: number, shades: number[]) {
-    for (let row of this.cellGroups) {
-      for (let cell of row) {
-        if (cell.groupId === groupId) {
-          cell.setShadeIndex(1);
-        }
-      }
-    }
+  private entryExitAnimator = new EntryExitAnimator();
+  private pathAnimator = new PathAnimator();
+
+  private onPathConnected(entry: MazeCell, exit: MazeCell) {
+    const path = findShortestPath(this.cellGroups, entry, exit);
+    this.pathAnimator.start(path);
   }
+
+  private isMouseDown = false;
 
   constructor() {
     super();
 
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
+
+    // Listen for mouse events on the main container
+    this.mainContainer.eventMode = "static";
+    this.mainContainer.on("pointerdown", () => {
+      this.isMouseDown = true;
+    });
+    this.mainContainer.on("pointerup", () => {
+      this.isMouseDown = false;
+    });
+    this.mainContainer.on("pointerupoutside", () => {
+      this.isMouseDown = false;
+    });
 
     const buttonAnimations = {
       hover: {
@@ -207,4 +214,21 @@ export class MainScreen extends Container {
 
   private cellTransitionKey: string = "shade";
 
+  // If you want to keep the logic in MainScreen, you can expose a helper:
+  public setupCellInteractions(cell: MazeCell, x: number, y: number) {
+    cell.on("pointertap", () => this.handleCellClick(cell, x, y));
+    cell.on("pointerdown", () => this.handleCellClick(cell, x, y));
+    cell.on("pointerover", () => {
+      if (this.isMouseDown) this.handleCellClick(cell, x, y);
+    });
+  }
+
+  private checkEntryExitConnection() {
+    const entryCell = this.cellGroups[1][0];
+    const exitCell = this.cellGroups[this.cellGroups.length - 2][this.cellGroups[0].length - 1];
+
+    if (entryCell.groupId !== null && entryCell.groupId === exitCell.groupId) {
+      this.onPathConnected(entryCell, exitCell);
+    }
+  }
 }
