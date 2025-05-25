@@ -8,30 +8,23 @@ import { Button } from "../ui/Button";
 import { Label } from "../ui/Label";
 import { RoundedBox } from "../ui/RoundedBox";
 import { VolumeSlider } from "../ui/VolumeSlider";
-import { userSettings } from "../utils/userSettings";
 
-/** Popup for volume */
 export class SettingsPopup extends Container {
-  /** The dark semi-transparent background covering current screen */
   private bg: Sprite;
-  /** Container for the popup UI components */
   private panel: Container;
-  /** The popup title label */
   private title: Text;
-  /** Button that closes the popup */
   private doneButton: Button;
-  /** The panel background */
   private panelBase: RoundedBox;
-  /** The build version label */
   private versionLabel: Text;
-  /** Layout that organises the UI components */
   private layout: List;
-  /** Slider that changes the master volume */
-  private masterSlider: VolumeSlider;
-  /** Slider that changes background music volume */
-  private bgmSlider: VolumeSlider;
-  /** Slider that changes sound effects volume */
-  private sfxSlider: VolumeSlider;
+
+  public mazeWidth: number = 15;
+  public mazeHeight: number = 21;
+
+  public onApply: ((width: number, height: number) => void) | null = null;
+
+  private widthSlider: VolumeSlider;
+  private heightSlider: VolumeSlider;
 
   constructor() {
     super();
@@ -57,9 +50,16 @@ export class SettingsPopup extends Container {
     this.title.y = -this.panelBase.boxHeight * 0.5 + 60;
     this.panel.addChild(this.title);
 
-    this.doneButton = new Button({ text: "OK" });
+    this.doneButton = new Button({ text: "Generate!" });
     this.doneButton.y = this.panelBase.boxHeight * 0.5 - 78;
-    this.doneButton.onPress.connect(() => engine().navigation.dismissPopup());
+    this.doneButton.onPress.connect(() => {
+      if (this.onApply) 
+        this.onApply(
+          Math.round(this.widthSlider.value),
+          Math.round(this.heightSlider.value),
+        );
+      engine().navigation.dismissPopup()
+    });
     this.panel.addChild(this.doneButton);
 
     this.versionLabel = new Label({
@@ -78,23 +78,23 @@ export class SettingsPopup extends Container {
     this.layout.y = -80;
     this.panel.addChild(this.layout);
 
-    this.masterSlider = new VolumeSlider("Master Volume");
-    this.masterSlider.onUpdate.connect((v) => {
-      userSettings.setMasterVolume(v / 100);
-    });
-    this.layout.addChild(this.masterSlider);
+    // Remove or comment out volume sliders for audio
 
-    this.bgmSlider = new VolumeSlider("BGM Volume");
-    this.bgmSlider.onUpdate.connect((v) => {
-      userSettings.setBgmVolume(v / 100);
-    });
-    this.layout.addChild(this.bgmSlider);
+    // Maze Width Slider
+    this.widthSlider = new VolumeSlider("Width");
+    this.widthSlider.min = 5;
+    this.widthSlider.max = 50;
+    this.widthSlider.value = this.mazeWidth;
+    this.widthSlider.step = 1;
+    this.layout.addChild(this.widthSlider);
 
-    this.sfxSlider = new VolumeSlider("SFX Volume");
-    this.sfxSlider.onUpdate.connect((v) => {
-      userSettings.setSfxVolume(v / 100);
-    });
-    this.layout.addChild(this.sfxSlider);
+    // Maze Height Slider
+    this.heightSlider = new VolumeSlider("Height");
+    this.heightSlider.min = 5;
+    this.heightSlider.max = 50;
+    this.heightSlider.value = this.mazeHeight;
+    this.heightSlider.step = 1;
+    this.layout.addChild(this.heightSlider);
   }
 
   /** Resize the popup, fired whenever window size changes */
@@ -105,11 +105,13 @@ export class SettingsPopup extends Container {
     this.panel.y = height * 0.5;
   }
 
-  /** Set things up just before showing the popup */
-  public prepare() {
-    this.masterSlider.value = userSettings.getMasterVolume() * 100;
-    this.bgmSlider.value = userSettings.getBgmVolume() * 100;
-    this.sfxSlider.value = userSettings.getSfxVolume() * 100;
+  public prepare(width?: number, height?: number) {
+    // Use provided values or fall back to defaults
+    if (typeof width === "number") this.mazeWidth = width;
+    if (typeof height === "number") this.mazeHeight = height;
+  
+    this.widthSlider.value = this.mazeWidth;
+    this.heightSlider.value = this.mazeHeight;
   }
 
   /** Present the popup, animated */

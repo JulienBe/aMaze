@@ -23,36 +23,101 @@ export class MainScreen extends Container {
   private mazePixelWidth = 0;
   private mazePixelHeight = 0;
 
+  private groupCounter = 1;
+  private cellGroups: MazeCell[][] = [];
+
+  private groupShades: Map<number, number[]> = new Map();
+
+  private paletteShades: number[][] = [
+    COLOR_SHADES.YELLOW,
+    COLOR_SHADES.DARK_GREEN,
+    COLOR_SHADES.BLUE,
+    COLOR_SHADES.PINK,
+    COLOR_SHADES.ORANGE,
+    COLOR_SHADES.LAVENDER,
+    COLOR_SHADES.RED,
+    COLOR_SHADES.PALE_BLUE,
+    COLOR_SHADES.VIVID_PINK,
+  ];
+
+  private getNextShades(): number[] {
+    const idx = (this.groupCounter - 1) % this.paletteShades.length;
+    return this.paletteShades[idx];
+  }
+
+  private handleCellClick = (cell: MazeCell, x: number, y: number) => {
+    if (cell.groupId !== null) return; // Already colored
+
+    // Find adjacent groups
+    const adjacent = [
+      [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
+    ].filter(([nx, ny]) =>
+      nx >= 0 && ny >= 0 &&
+      nx < this.cellGroups[0].length && ny < this.cellGroups.length
+    ).map(([nx, ny]) => this.cellGroups[ny][nx])
+     .filter(c => c.groupId !== null);
+
+    const uniqueGroups = Array.from(new Set(adjacent.map(c => c.groupId)));
+
+    let groupId: number;
+    let shades: number[];
+    if (uniqueGroups.length === 0) {
+      // New group
+      groupId = this.groupCounter++;
+      shades = this.getNextShades();
+      this.groupShades.set(groupId, shades);
+    } else if (uniqueGroups.length === 1) {
+      // Join existing group
+      groupId = uniqueGroups[0]!;
+      shades = this.groupShades.get(groupId)!;
+    } else {
+      // Merge groups
+      groupId = uniqueGroups[0]!;
+      shades = this.groupShades.get(groupId)!;
+      // Update all cells in merged groups
+      for (let row of this.cellGroups) {
+        for (let c of row) {
+          if (c.groupId && uniqueGroups.includes(c.groupId)) {
+            c.groupId = groupId;
+            c.setColorKey(shades);
+          }
+        }
+      }
+      // Remove merged group shades
+      uniqueGroups.slice(1).forEach(gid => this.groupShades.delete(gid!));
+    }
+
+    cell.groupId = groupId;
+    cell.setColorKey(shades);
+
+    // --- SPECIAL: Check if entry and exit are connected ---
+    const entryCell = this.cellGroups[1][0];
+    const exitCell = this.cellGroups[this.cellGroups.length - 2][this.cellGroups[0].length - 1];
+    if (
+      entryCell.groupId !== null &&
+      entryCell.groupId === exitCell.groupId
+    ) {
+      this.onPathConnected(entryCell.groupId, shades);
+    }
+  };
+
+  private onPathConnected(groupId: number, shades: number[]) {
+    // Example: Animate all cells in the connected group to use a special shade
+    for (let row of this.cellGroups) {
+      for (let cell of row) {
+        if (cell.groupId === groupId) {
+          cell.setShadeIndex(1); // Use a different shade index for highlight
+        }
+      }
+    }
+    // You could also trigger a sound, popup, or animation here!
+  }
+
   constructor() {
     super();
 
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
-
-    // --- Maze generation and display ---
-    const maze = generateMaze(15, 21); // width, height
-    const cellSize = 32;
-    for (let y = 0; y < maze.length; y++) {
-      for (let x = 0; x < maze[0].length; x++) {
-        const type = maze[y][x];
-        const colorShades =
-          type === "wall"
-            ? COLOR_SHADES.DARK_GRAY
-            : COLOR_SHADES.YELLOW_GREEN;
-        const shadeIndex = type === "wall" ? 0 : 0;
-        const cell = new MazeCell(
-          colorShades,
-          shadeIndex,
-          cellSize,
-          x * cellSize,
-          y * cellSize,
-        );
-        this.mainContainer.addChild(cell);
-      }
-    }
-
-    this.mazePixelWidth = maze[0].length * cellSize;
-    this.mazePixelHeight = maze.length * cellSize;
 
     const buttonAnimations = {
       hover: {
@@ -74,10 +139,21 @@ export class MainScreen extends Container {
       anchor: 0.5,
       animations: buttonAnimations,
     });
-    this.settingsButton.onPress.connect(() =>
-      engine().navigation.presentPopup(SettingsPopup),
-    );
+    this.settingsButton.onPress.connect(async () => {
+      await engine().navigation.presentPopup(SettingsPopup);
+      const popup = engine().navigation.currentPopup as SettingsPopup;
+      if (popup) {
+        popup.prepare(this.mazePixelWidth / 32, this.mazePixelHeight / 32); // or store mazeWidth/mazeHeight as properties
+        popup.onApply = (width, height) => {
+          this.generateAndDisplayMaze(width, height);
+        };
+      }
+    });
     this.addChild(this.settingsButton);
+
+
+    // Initial maze
+    this.generateAndDisplayMaze(15, 21);
   }
 
   /** Prepare the screen just before showing */
@@ -116,8 +192,6 @@ export class MainScreen extends Container {
 
   /** Show screen with animations */
   public async show(): Promise<void> {
-    engine().audio.bgm.play("main/sounds/bgm-main.mp3", { volume: 0.5 });
-
     const elementsToAnimate = [
       this.settingsButton,
     ];
@@ -143,5 +217,44 @@ export class MainScreen extends Container {
     if (!engine().navigation.currentPopup) {
       engine().navigation.presentPopup(PausePopup);
     }
+  }
+
+  private generateAndDisplayMaze(width: number, height: number) {
+    // Remove old maze cells
+    this.mainContainer.removeChildren();
+    this.cellGroups = [];
+
+    const maze = generateMaze(width, height);
+    const cellSize = 32;
+    for (let y = 0; y < maze.length; y++) {
+      this.cellGroups[y] = [];
+      for (let x = 0; x < maze[0].length; x++) {
+        const type = maze[y][x];
+        const colorShades =
+          type === "wall"
+            ? COLOR_SHADES.DARK_GRAY
+            : COLOR_SHADES.YELLOW_GREEN;
+        const shadeIndex = type === "wall" ? 0 : 0;
+        const cell = new MazeCell(
+          colorShades,
+          shadeIndex,
+          cellSize,
+          x * cellSize,
+          y * cellSize,
+        );
+        cell.interactive = type !== "wall";
+        if (type !== "wall") {
+          cell.on("pointertap", () => this.handleCellClick(cell, x, y));
+        }
+        this.mainContainer.addChild(cell);
+        this.cellGroups[y][x] = cell;
+      }
+    }
+
+    this.mazePixelWidth = maze[0].length * cellSize;
+    this.mazePixelHeight = maze.length * cellSize;
+
+    // Optionally, call resize to re-center
+    this.resize(engine().renderer.width, engine().renderer.height);
   }
 }
