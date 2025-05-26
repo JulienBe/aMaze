@@ -1,109 +1,48 @@
-import { FancyButton } from "@pixi/ui";
-import { animate } from "motion";
-import type { AnimationPlaybackControls } from "motion/react";
-import { Ticker, Container } from "pixi.js";
+import { Container, Ticker } from "pixi.js";
 
 import { engine } from "../../getEngine";
 import { PausePopup } from "../../popups/PausePopup";
-import { SettingsPopup } from "../../popups/SettingsPopup";
-import { MazeCellType } from "../../utils/MazeGenerator";
-import { COLOR_SHADES } from "../../utils/ColorPalette";
+import { MazeCellType, generateMaze } from "../../utils/MazeGenerator";
 import { MazeCell } from "./MazeCell";
 import { MazeRevealer } from "./MazeRevealPatterns";
 import { generateAndDisplayMaze } from "./MazeDisplayUtils";
 import { EntryExitAnimator } from "./EntryExitAnimator";
 import { findShortestPath } from "./PathUtils";
 import { PathAnimator } from "./PathAnimator";
+import { UIScreenUIManager } from "./UIScreenUIManager";
+import { MazeManager } from "./MazeManager";
+import { Raycaster } from "./Raycaster";
 
 /** The screen that holds the app */
 export class MainScreen extends Container {
   public static assetBundles = ["main"];
 
   public mainContainer: Container;
-  private settingsButton: FancyButton;
+  private raycastContainer: Container; // Add a container for the raycast view
   private paused = false;
   private mazePixelWidth = 0;
   private mazePixelHeight = 0;
 
-  private groupCounter = 1;
-  private cellGroups: MazeCell[][] = [];
-  private groupShades: Map<number, number[]> = new Map();
-
-  private paletteShades: number[][] = [
-    COLOR_SHADES.YELLOW,
-    COLOR_SHADES.DARK_GREEN,
-    COLOR_SHADES.BLUE,
-    COLOR_SHADES.PINK,
-    COLOR_SHADES.ORANGE,
-    COLOR_SHADES.LAVENDER,
-    COLOR_SHADES.RED,
-    COLOR_SHADES.PALE_BLUE,
-    COLOR_SHADES.VIVID_PINK,
-  ];
-
-  private getNextShades(): number[] {
-    const idx = (this.groupCounter - 1) % this.paletteShades.length;
-    return this.paletteShades[idx];
-  }
-
-  private handleCellClick = (cell: MazeCell, x: number, y: number) => {
-    if (cell.groupId !== null) return; // Already colored
-
-    // Find adjacent groups
-    const adjacent = [
-      [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
-    ].filter(([nx, ny]) =>
-      nx >= 0 && ny >= 0 &&
-      nx < this.cellGroups[0].length && ny < this.cellGroups.length
-    ).map(([nx, ny]) => this.cellGroups[ny][nx])
-     .filter(c => c.groupId !== null);
-
-    const uniqueGroups = Array.from(new Set(adjacent.map(c => c.groupId)));
-
-    let groupId: number;
-    let shades: number[];
-    if (uniqueGroups.length === 0) {
-      groupId = this.groupCounter++;
-      shades = this.getNextShades();
-      this.groupShades.set(groupId, shades);
-    } else if (uniqueGroups.length === 1) {
-      groupId = uniqueGroups[0]!;
-      shades = this.groupShades.get(groupId)!;
-    } else {
-      groupId = uniqueGroups[0]!;
-      shades = this.groupShades.get(groupId)!;
-      for (let row of this.cellGroups) {
-        for (let c of row) {
-          if (c.groupId && uniqueGroups.includes(c.groupId)) {
-            c.groupId = groupId;
-            c.setColorKey(shades);
-          }
-        }
-      }
-      uniqueGroups.slice(1).forEach(gid => this.groupShades.delete(gid!));
-    }
-
-    cell.groupId = groupId;
-    cell.setColorKey(shades);
-
-    this.checkEntryExitConnection();
-  };
+  private mazeManager?: MazeManager;
 
   private entryExitAnimator = new EntryExitAnimator();
   private pathAnimator = new PathAnimator();
 
-  private onPathConnected(entry: MazeCell, exit: MazeCell) {
-    const path = findShortestPath(this.cellGroups, entry, exit);
-    this.pathAnimator.start(path);
-  }
-
   private isMouseDown = false;
+
+  private uiManager: UIScreenUIManager;
+
+  private isRaycastView = false; // Track whether the raycast view is active
+  private raycaster?: Raycaster;
 
   constructor() {
     super();
 
     this.mainContainer = new Container();
+    this.raycastContainer = new Container();
     this.addChild(this.mainContainer);
+    this.addChild(this.raycastContainer);
+    this.raycastContainer.visible = false; // Hide the raycast container by default
 
     // Listen for mouse events on the main container
     this.mainContainer.eventMode = "static";
@@ -117,37 +56,13 @@ export class MainScreen extends Container {
       this.isMouseDown = false;
     });
 
-    const buttonAnimations = {
-      hover: {
-        props: {
-          scale: { x: 1.1, y: 1.1 },
-        },
-        duration: 100,
-      },
-      pressed: {
-        props: {
-          scale: { x: 0.9, y: 0.9 },
-        },
-        duration: 100,
-      },
-    };
-
-    this.settingsButton = new FancyButton({
-      defaultView: "icon-settings.png",
-      anchor: 0.5,
-      animations: buttonAnimations,
-    });
-    this.settingsButton.onPress.connect(async () => {
-      await engine().navigation.presentPopup(SettingsPopup);
-      const popup = engine().navigation.currentPopup as SettingsPopup;
-      if (popup) {
-        popup.prepare(this.mazePixelWidth / 32, this.mazePixelHeight / 32);
-        popup.onApply = (width, height) => {
-          this.generateAndDisplayMaze(width, height);
-        };
-      }
-    });
-    this.addChild(this.settingsButton);
+    this.uiManager = new UIScreenUIManager(
+      this,
+      (width, height) => this.generateAndDisplayMaze(width, height),
+      () => this.mazePixelWidth,
+      () => this.mazePixelHeight,
+      (isRaycast) => this.toggleView(isRaycast)
+    );
 
     generateAndDisplayMaze(this, 15, 21);
   }
@@ -174,26 +89,16 @@ export class MainScreen extends Container {
     this.mainContainer.x = (width - this.mazePixelWidth) / 2;
     this.mainContainer.y = (height - this.mazePixelHeight) / 2;
 
-    this.settingsButton.x = width - 30;
-    this.settingsButton.y = 30;
+    this.uiManager.resize(width, height);
+    if (this.raycaster) {
+      this.raycaster.setSize(width, height);
+      this.raycastContainer.x = 0;
+      this.raycastContainer.y = 0;
+    }
   }
 
   public async show(): Promise<void> {
-    const elementsToAnimate = [
-      this.settingsButton,
-    ];
-
-    let finalPromise!: AnimationPlaybackControls;
-    for (const element of elementsToAnimate) {
-      element.alpha = 0;
-      finalPromise = animate(
-        element,
-        { alpha: 1 },
-        { duration: 0.3, delay: 0.75, ease: "backOut" },
-      );
-    }
-
-    await finalPromise;
+    await this.uiManager.animateIn();
   }
 
   public async hide() {}
@@ -209,26 +114,55 @@ export class MainScreen extends Container {
   private mazeRevealer?: MazeRevealer;
 
   private generateAndDisplayMaze(width: number, height: number) {
-    generateAndDisplayMaze(this, width, height);
+    this.mazeData = generateMaze(width, height);
+    const cellGroups = generateAndDisplayMaze(this, width, height);
+    this.mazeManager = new MazeManager(cellGroups);
   }
 
   private cellTransitionKey: string = "shade";
 
-  // If you want to keep the logic in MainScreen, you can expose a helper:
   public setupCellInteractions(cell: MazeCell, x: number, y: number) {
-    cell.on("pointertap", () => this.handleCellClick(cell, x, y));
-    cell.on("pointerdown", () => this.handleCellClick(cell, x, y));
-    cell.on("pointerover", () => {
-      if (this.isMouseDown) this.handleCellClick(cell, x, y);
-    });
+    if (!this.mazeManager) return;
+    this.mazeManager.setupCellInteractions(
+      cell,
+      x,
+      y,
+      () => this.isMouseDown,
+      (entry, exit) => this.onPathConnected(entry, exit)
+    );
   }
 
-  private checkEntryExitConnection() {
-    const entryCell = this.cellGroups[1][0];
-    const exitCell = this.cellGroups[this.cellGroups.length - 2][this.cellGroups[0].length - 1];
+  private onPathConnected(entry: MazeCell, exit: MazeCell) {
+    if (!this.mazeManager) return;
+    const path = findShortestPath(this.mazeManager.cellGroups, entry, exit);
+    this.pathAnimator.start(path);
+  }
 
-    if (entryCell.groupId !== null && entryCell.groupId === exitCell.groupId) {
-      this.onPathConnected(entryCell, exitCell);
+  // Add this method to handle view toggling
+  private toggleView(isRaycast: boolean) {
+    this.isRaycastView = isRaycast;
+    this.mainContainer.visible = !isRaycast;
+    this.raycastContainer.visible = isRaycast;
+    if (isRaycast) {
+      // Remove previous raycaster if any
+      this.raycastContainer.removeChildren();
+      // Use the latest mazeData for the raycaster
+      const screenWidth = (engine().renderer.width || window.innerWidth);
+      const screenHeight = (engine().renderer.height || window.innerHeight);
+      this.raycaster = new Raycaster(
+        this.mazeData,
+        32,
+        screenWidth,
+        screenHeight
+      );
+      this.raycastContainer.addChild(this.raycaster);
+      this.raycaster.setSize(screenWidth, screenHeight);
+      // Center the raycast view (now fills screen, so set to 0,0)
+      this.raycastContainer.x = 0;
+      this.raycastContainer.y = 0;
+    } else {
+      this.raycastContainer.removeChildren();
     }
+    console.log('Toggled view. Raycast:', isRaycast);
   }
 }

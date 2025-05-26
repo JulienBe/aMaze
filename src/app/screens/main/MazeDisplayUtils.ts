@@ -9,11 +9,8 @@ export function generateAndDisplayMaze(
   mainScreen: any, // MainScreen instance
   width: number,
   height: number
-) {
+): MazeCell[][] {
   mainScreen.mainContainer.removeChildren();
-  mainScreen.cellGroups = [];
-  mainScreen.groupCounter = 1;
-  mainScreen.groupShades.clear();
 
   mainScreen.mazeData = generateMaze(width, height);
 
@@ -22,12 +19,7 @@ export function generateAndDisplayMaze(
 
   mainScreen.resize(engine().renderer.width, engine().renderer.height);
 
-  for (let y = 0; y < mainScreen.mazeData.length; y++) {
-    mainScreen.cellGroups[y] = [];
-    for (let x = 0; x < mainScreen.mazeData[0].length; x++) {
-      mainScreen.cellGroups[y][x] = null as any;
-    }
-  }
+  const cellGroups: MazeCell[][] = [];
 
   // Pick a random transition for this maze
   mainScreen.cellTransitionKey = pickCellTransition();
@@ -53,9 +45,12 @@ export function generateAndDisplayMaze(
         mainScreen.setupCellInteractions(cell, x, y);
       }
       mainScreen.mainContainer.addChild(cell);
-      mainScreen.cellGroups[y][x] = cell;
+      if (!cellGroups[y]) cellGroups[y] = [];
+      cellGroups[y][x] = cell;
       CELL_TRANSITIONS[mainScreen.cellTransitionKey](cell);
     }
   );
   mainScreen.mazeRevealer.start();
+
+  return cellGroups;
 }
