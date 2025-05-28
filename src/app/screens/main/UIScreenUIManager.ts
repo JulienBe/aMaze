@@ -44,7 +44,7 @@ export class UIScreenUIManager {
     let isRaycast = false;
     this.toggleViewButton.onPress.connect(() => {
       isRaycast = !isRaycast;
-      this.toggleViewButton.defaultView = isRaycast ? "icon-2d.png" : "icon-raycast.svg";
+      this.toggleViewButton.defaultView = "icon-raycast.svg";
       onToggleView(isRaycast);
     });
 
@@ -66,6 +66,7 @@ export class UIScreenUIManager {
     this.settingsButton.y = 30;
     this.toggleViewButton.x = width - 80;
     this.toggleViewButton.y = 30;
+    this.toggleViewButton.visible = true; // Always visible
   }
 
   public async animateIn(): Promise<void> {
