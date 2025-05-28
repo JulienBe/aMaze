@@ -4,7 +4,9 @@ import { Ticker } from "pixi.js";
 
 export type RevealQueuePattern = (mazeData: any[][]) => [number, number][];
 
-export function fillRevealQueueCenterOut(mazeData: any[][]): [number, number][] {
+export function fillRevealQueueCenterOut(
+  mazeData: any[][],
+): [number, number][] {
   const w = mazeData[0].length;
   const h = mazeData.length;
   const cx = (w - 1) / 2;
@@ -17,7 +19,7 @@ export function fillRevealQueueCenterOut(mazeData: any[][]): [number, number][] 
   }
   queue.sort(
     ([x1, y1], [x2, y2]) =>
-      Math.hypot(x1 - cx, y1 - cy) - Math.hypot(x2 - cx, y2 - cy)
+      Math.hypot(x1 - cx, y1 - cy) - Math.hypot(x2 - cx, y2 - cy),
   );
   return queue;
 }
@@ -29,7 +31,8 @@ export function fillRevealQueueEdgesIn(mazeData: any[][]): [number, number][] {
 export function fillRevealQueueMix(mazeData: any[][]): [number, number][] {
   const base = fillRevealQueueCenterOut(mazeData);
   const mixed: [number, number][] = [];
-  let left = 0, right = base.length - 1;
+  let left = 0,
+    right = base.length - 1;
   while (left <= right) {
     if (left === right) {
       mixed.push(base[left]);
@@ -42,7 +45,9 @@ export function fillRevealQueueMix(mazeData: any[][]): [number, number][] {
   return mixed;
 }
 
-export function fillRevealQueueCornerToCorner(mazeData: any[][]): [number, number][] {
+export function fillRevealQueueCornerToCorner(
+  mazeData: any[][],
+): [number, number][] {
   const w = mazeData[0].length;
   const h = mazeData.length;
   const queue: [number, number][] = [];
@@ -51,14 +56,13 @@ export function fillRevealQueueCornerToCorner(mazeData: any[][]): [number, numbe
       queue.push([x, y]);
     }
   }
-  queue.sort(
-    ([x1, y1], [x2, y2]) =>
-      Math.hypot(x1, y1) - Math.hypot(x2, y2)
-  );
+  queue.sort(([x1, y1], [x2, y2]) => Math.hypot(x1, y1) - Math.hypot(x2, y2));
   return queue;
 }
 
-export function fillRevealQueueRandomPattern(mazeData: any[][]): [number, number][] {
+export function fillRevealQueueRandomPattern(
+  mazeData: any[][],
+): [number, number][] {
   const patterns = [
     fillRevealQueueCenterOut,
     fillRevealQueueEdgesIn,
@@ -79,7 +83,7 @@ export class MazeRevealer {
     mazeData: any[][],
     pattern: RevealQueuePattern,
     onReveal: (x: number, y: number) => void,
-    N: number = 3
+    N: number = 3,
   ) {
     this.queue = pattern(mazeData);
     this.onReveal = onReveal;

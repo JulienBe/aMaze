@@ -53,12 +53,12 @@ export class SettingsPopup extends Container {
     this.doneButton = new Button({ text: "Generate!" });
     this.doneButton.y = this.panelBase.boxHeight * 0.5 - 78;
     this.doneButton.onPress.connect(() => {
-      if (this.onApply) 
+      if (this.onApply)
         this.onApply(
           Math.round(this.widthSlider.value),
           Math.round(this.heightSlider.value),
         );
-      engine().navigation.dismissPopup()
+      engine().navigation.dismissPopup();
     });
     this.panel.addChild(this.doneButton);
 
@@ -109,7 +109,7 @@ export class SettingsPopup extends Container {
     // Use provided values or fall back to defaults
     if (typeof width === "number") this.mazeWidth = width;
     if (typeof height === "number") this.mazeHeight = height;
-  
+
     this.widthSlider.value = this.mazeWidth;
     this.heightSlider.value = this.mazeHeight;
   }

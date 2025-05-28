@@ -29,19 +29,32 @@ export class MazeManager {
     return this.paletteShades[idx];
   }
 
-  public handleCellClick(cell: MazeCell, x: number, y: number, onEntryExitConnected: (entry: MazeCell, exit: MazeCell) => void) {
+  public handleCellClick(
+    cell: MazeCell,
+    x: number,
+    y: number,
+    onEntryExitConnected: (entry: MazeCell, exit: MazeCell) => void,
+  ) {
     if (cell.groupId !== null) return; // Already colored
 
     // Find adjacent groups
     const adjacent = [
-      [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]
-    ].filter(([nx, ny]) =>
-      nx >= 0 && ny >= 0 &&
-      nx < this.cellGroups[0].length && ny < this.cellGroups.length
-    ).map(([nx, ny]) => this.cellGroups[ny][nx])
-     .filter(c => c.groupId !== null);
+      [x - 1, y],
+      [x + 1, y],
+      [x, y - 1],
+      [x, y + 1],
+    ]
+      .filter(
+        ([nx, ny]) =>
+          nx >= 0 &&
+          ny >= 0 &&
+          nx < this.cellGroups[0].length &&
+          ny < this.cellGroups.length,
+      )
+      .map(([nx, ny]) => this.cellGroups[ny][nx])
+      .filter((c) => c.groupId !== null);
 
-    const uniqueGroups = Array.from(new Set(adjacent.map(c => c.groupId)));
+    const uniqueGroups = Array.from(new Set(adjacent.map((c) => c.groupId)));
 
     let groupId: number;
     let shades: number[];
@@ -63,7 +76,7 @@ export class MazeManager {
           }
         }
       }
-      uniqueGroups.slice(1).forEach(gid => this.groupShades.delete(gid!));
+      uniqueGroups.slice(1).forEach((gid) => this.groupShades.delete(gid!));
     }
 
     cell.groupId = groupId;
@@ -72,17 +85,32 @@ export class MazeManager {
     this.checkEntryExitConnection(onEntryExitConnected);
   }
 
-  public setupCellInteractions(cell: MazeCell, x: number, y: number, isMouseDown: () => boolean, onEntryExitConnected: (entry: MazeCell, exit: MazeCell) => void) {
-    cell.on("pointertap", () => this.handleCellClick(cell, x, y, onEntryExitConnected));
-    cell.on("pointerdown", () => this.handleCellClick(cell, x, y, onEntryExitConnected));
+  public setupCellInteractions(
+    cell: MazeCell,
+    x: number,
+    y: number,
+    isMouseDown: () => boolean,
+    onEntryExitConnected: (entry: MazeCell, exit: MazeCell) => void,
+  ) {
+    cell.on("pointertap", () =>
+      this.handleCellClick(cell, x, y, onEntryExitConnected),
+    );
+    cell.on("pointerdown", () =>
+      this.handleCellClick(cell, x, y, onEntryExitConnected),
+    );
     cell.on("pointerover", () => {
       if (isMouseDown()) this.handleCellClick(cell, x, y, onEntryExitConnected);
     });
   }
 
-  private checkEntryExitConnection(onEntryExitConnected: (entry: MazeCell, exit: MazeCell) => void) {
+  private checkEntryExitConnection(
+    onEntryExitConnected: (entry: MazeCell, exit: MazeCell) => void,
+  ) {
     const entryCell = this.cellGroups[1][0];
-    const exitCell = this.cellGroups[this.cellGroups.length - 2][this.cellGroups[0].length - 1];
+    const exitCell =
+      this.cellGroups[this.cellGroups.length - 2][
+        this.cellGroups[0].length - 1
+      ];
 
     if (entryCell.groupId !== null && entryCell.groupId === exitCell.groupId) {
       onEntryExitConnected(entryCell, exitCell);

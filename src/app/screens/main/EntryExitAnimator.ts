@@ -8,7 +8,7 @@ export class EntryExitAnimator {
     entryCell: MazeCell,
     exitCell: MazeCell,
     shadesList: number[][],
-    intervalMs: number = 250
+    intervalMs: number = 250,
   ) {
     this.stop();
     this.interval = setInterval(() => {

@@ -4,7 +4,10 @@ import { COLOR_SHADES } from "../../utils/ColorPalette";
 import { MazeCell } from "./MazeCell";
 
 // Map MazeCellType to color key for COLOR_SHADES
-const MAZE_CELL_TYPE_TO_COLOR_KEY: Record<MazeCellType, keyof typeof COLOR_SHADES> = {
+const MAZE_CELL_TYPE_TO_COLOR_KEY: Record<
+  MazeCellType,
+  keyof typeof COLOR_SHADES
+> = {
   path: "YELLOW_GREEN",
   wall: "DARK_GRAY",
   // Add more mappings if you have more types (e.g. entry, exit, etc.)
@@ -26,7 +29,13 @@ export class Raycaster extends Container {
   private viewWidth: number;
   private viewHeight: number;
 
-  constructor(maze: MazeCellType[][], cellSize = 32, width = 640, height = 400, cellGroups?: MazeCell[][]) {
+  constructor(
+    maze: MazeCellType[][],
+    cellSize = 32,
+    width = 640,
+    height = 400,
+    cellGroups?: MazeCell[][],
+  ) {
     super();
     this.maze = maze;
     this.cellGroups = cellGroups;
@@ -63,11 +72,19 @@ export class Raycaster extends Container {
       let moved = false;
       // Forward (W or ArrowUp)
       if (this.keys["w"] || this.keys["arrowup"]) {
-        moved = this.tryMove(Math.cos(this.player.angle) * this.moveSpeed, Math.sin(this.player.angle) * this.moveSpeed) || moved;
+        moved =
+          this.tryMove(
+            Math.cos(this.player.angle) * this.moveSpeed,
+            Math.sin(this.player.angle) * this.moveSpeed,
+          ) || moved;
       }
       // Backward (S or ArrowDown)
       if (this.keys["s"] || this.keys["arrowdown"]) {
-        moved = this.tryMove(-Math.cos(this.player.angle) * this.moveSpeed, -Math.sin(this.player.angle) * this.moveSpeed) || moved;
+        moved =
+          this.tryMove(
+            -Math.cos(this.player.angle) * this.moveSpeed,
+            -Math.sin(this.player.angle) * this.moveSpeed,
+          ) || moved;
       }
       // Left (A or ArrowLeft)
       if (this.keys["a"] || this.keys["arrowleft"]) {
@@ -161,7 +178,8 @@ export class Raycaster extends Container {
       ) {
         const cell = this.cellGroups[lastPathY][lastPathX];
         // Use the cell's current shade
-        wallColor = cell.shades[cell.shadeIndex] ?? COLOR_SHADES.YELLOW_GREEN[0];
+        wallColor =
+          cell.shades[cell.shadeIndex] ?? COLOR_SHADES.YELLOW_GREEN[0];
       } else {
         // fallback to MazeCellType color
         let colorKey: keyof typeof COLOR_SHADES = "YELLOW_GREEN";
@@ -174,7 +192,10 @@ export class Raycaster extends Container {
           colorKey = MAZE_CELL_TYPE_TO_COLOR_KEY[cellType] || "YELLOW_GREEN";
         }
         const shadeSteps = COLOR_SHADES[colorKey].length;
-        const shadeIndex = Math.min(shadeSteps - 1, Math.floor((correctedDist / maxDepth) * shadeSteps));
+        const shadeIndex = Math.min(
+          shadeSteps - 1,
+          Math.floor((correctedDist / maxDepth) * shadeSteps),
+        );
         wallColor = COLOR_SHADES[colorKey][shadeIndex];
       }
       this.graphics.beginFill(wallColor);
@@ -182,7 +203,7 @@ export class Raycaster extends Container {
         (i * width) / numRays,
         height / 2 - sliceHeight / 2,
         width / numRays + 1,
-        sliceHeight
+        sliceHeight,
       );
       this.graphics.endFill();
     }

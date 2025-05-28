@@ -21,11 +21,7 @@ export const CELL_TRANSITIONS: Record<string, MazeCellTransition> = {
   },
   scale: (cell: MazeCell) => {
     cell.scale.set(0, 0);
-    animate(
-      cell.scale,
-      { x: 1, y: 1 },
-      { duration: 0.25, ease: "backOut" }
-    );
+    animate(cell.scale, { x: 1, y: 1 }, { duration: 0.25, ease: "backOut" });
   },
   flyIn: (cell: MazeCell) => {
     // Get maze/container dimensions and cell size
@@ -36,9 +32,9 @@ export const CELL_TRANSITIONS: Record<string, MazeCellTransition> = {
 
     // Find closest border
     const distances = [
-      { dir: "left",   dist: cell.x }, // distance to left
-      { dir: "right",  dist: mazeWidth - cell.x - cellSize }, // to right
-      { dir: "top",    dist: cell.y }, // to top
+      { dir: "left", dist: cell.x }, // distance to left
+      { dir: "right", dist: mazeWidth - cell.x - cellSize }, // to right
+      { dir: "top", dist: cell.y }, // to top
       { dir: "bottom", dist: mazeHeight - cell.y - cellSize }, // to bottom
     ];
     const closest = distances.reduce((a, b) => (a.dist < b.dist ? a : b));
@@ -63,11 +59,7 @@ export const CELL_TRANSITIONS: Record<string, MazeCellTransition> = {
         break;
     }
 
-    animate(
-      cell,
-      { x: origX, y: origY },
-      { duration: 0.45, ease: "backOut" }
-    );
+    animate(cell, { x: origX, y: origY }, { duration: 0.45, ease: "backOut" });
   },
   // Add more transitions here!
 };

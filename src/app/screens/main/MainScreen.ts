@@ -67,7 +67,7 @@ export class MainScreen extends Container {
       (width, height) => this.generateAndDisplayMaze(width, height),
       () => this.mazePixelWidth,
       () => this.mazePixelHeight,
-      (isRaycast) => this.toggleView(isRaycast)
+      (isRaycast) => this.toggleView(isRaycast),
     );
 
     generateAndDisplayMaze(this, 15, 21);
@@ -110,7 +110,7 @@ export class MainScreen extends Container {
       x,
       y,
       () => this.isMouseDown,
-      (entry, exit) => this.onPathConnected(entry, exit)
+      (entry, exit) => this.onPathConnected(entry, exit),
     );
   }
 
@@ -133,36 +133,43 @@ export class MainScreen extends Container {
       g.drawRoundedRect(0, 0, buttonSize, buttonSize, 12);
       g.endFill();
       btn.addChild(g);
-      const t = new Text(label, { fontSize: 24, fill: 0xffffff, align: 'center' });
+      const t = new Text(label, {
+        fontSize: 24,
+        fill: 0xffffff,
+        align: "center",
+      });
       t.anchor.set(0.5);
       t.x = buttonSize / 2;
       t.y = buttonSize / 2;
       btn.addChild(t);
       btn.x = x;
       btn.y = y;
-      btn.eventMode = 'static';
-      btn.cursor = 'pointer';
+      btn.eventMode = "static";
+      btn.cursor = "pointer";
       // Press and hold logic
-      btn.on('pointerdown', () => {
+      btn.on("pointerdown", () => {
         this.simulateRaycastKeyDown(key);
         // Repeat movement every 60ms while held
-        buttonIntervals[key] = setInterval(() => this.simulateRaycastKeyDown(key), 60);
+        buttonIntervals[key] = setInterval(
+          () => this.simulateRaycastKeyDown(key),
+          60,
+        );
       });
-      btn.on('pointerup', () => {
+      btn.on("pointerup", () => {
         this.simulateRaycastKeyUp(key);
         if (buttonIntervals[key]) {
           clearInterval(buttonIntervals[key]!);
           buttonIntervals[key] = null;
         }
       });
-      btn.on('pointerupoutside', () => {
+      btn.on("pointerupoutside", () => {
         this.simulateRaycastKeyUp(key);
         if (buttonIntervals[key]) {
           clearInterval(buttonIntervals[key]!);
           buttonIntervals[key] = null;
         }
       });
-      btn.on('pointerout', () => {
+      btn.on("pointerout", () => {
         this.simulateRaycastKeyUp(key);
         if (buttonIntervals[key]) {
           clearInterval(buttonIntervals[key]!);
@@ -174,15 +181,33 @@ export class MainScreen extends Container {
     };
     // Layout: Up, Down, Left, Right
     const centerX = (engine().renderer.width || window.innerWidth) / 2;
-    const baseY = (engine().renderer.height || window.innerHeight) - buttonSize * 2 - padding * 5;
+    const baseY =
+      (engine().renderer.height || window.innerHeight) -
+      buttonSize * 2 -
+      padding * 5;
     // Up
-    makeButton('↑', centerX - buttonSize / 2, baseY, 'w');
+    makeButton("↑", centerX - buttonSize / 2, baseY, "w");
     // Down
-    makeButton('↓', centerX - buttonSize / 2, baseY + buttonSize + padding * 2, 's');
+    makeButton(
+      "↓",
+      centerX - buttonSize / 2,
+      baseY + buttonSize + padding * 2,
+      "s",
+    );
     // Left
-    makeButton('←', centerX - buttonSize - padding * 4, baseY + buttonSize + padding, 'a');
+    makeButton(
+      "←",
+      centerX - buttonSize - padding * 4,
+      baseY + buttonSize + padding,
+      "a",
+    );
     // Right
-    makeButton('→', centerX + buttonSize + padding * 4 - buttonSize, baseY + buttonSize + padding, 'd');
+    makeButton(
+      "→",
+      centerX + buttonSize + padding * 4 - buttonSize,
+      baseY + buttonSize + padding,
+      "d",
+    );
   }
 
   private simulateRaycastKeyDown(key: string) {
@@ -205,14 +230,14 @@ export class MainScreen extends Container {
       // Remove previous raycaster if any
       this.raycastContainer.removeChildren();
       // Use the latest cellGroups for the raycaster
-      const screenWidth = (engine().renderer.width || window.innerWidth);
-      const screenHeight = (engine().renderer.height || window.innerHeight);
+      const screenWidth = engine().renderer.width || window.innerWidth;
+      const screenHeight = engine().renderer.height || window.innerHeight;
       this.raycaster = new Raycaster(
         this.mazeData,
         32,
         screenWidth,
         screenHeight,
-        this.cellGroups // pass cellGroups for color lookup
+        this.cellGroups, // pass cellGroups for color lookup
       );
       this.raycastContainer.addChild(this.raycaster);
       this.raycaster.setSize(screenWidth, screenHeight);
@@ -226,8 +251,11 @@ export class MainScreen extends Container {
       // The toggleViewButton remains visible in both modes
     }
     // Ensure UI is updated
-    this.uiManager.resize(engine().renderer.width || window.innerWidth, engine().renderer.height || window.innerHeight);
-    console.log('Toggled view. Raycast:', isRaycast);
+    this.uiManager.resize(
+      engine().renderer.width || window.innerWidth,
+      engine().renderer.height || window.innerHeight,
+    );
+    console.log("Toggled view. Raycast:", isRaycast);
   }
 
   public resize(width: number, height: number) {

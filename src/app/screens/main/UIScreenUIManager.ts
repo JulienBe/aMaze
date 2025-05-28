@@ -13,7 +13,7 @@ export class UIScreenUIManager {
     onSettingsApply: (width: number, height: number) => void,
     getMazePixelWidth: () => number,
     getMazePixelHeight: () => number,
-    onToggleView: (isRaycast: boolean) => void
+    onToggleView: (isRaycast: boolean) => void,
   ) {
     const buttonAnimations = {
       hover: {
@@ -74,7 +74,7 @@ export class UIScreenUIManager {
     await animate(
       this.settingsButton,
       { alpha: 1 },
-      { duration: 0.3, delay: 0.75, ease: "backOut" }
+      { duration: 0.3, delay: 0.75, ease: "backOut" },
     );
   }
 }

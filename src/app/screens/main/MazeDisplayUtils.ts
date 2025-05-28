@@ -1,5 +1,8 @@
 import { MazeCell } from "./MazeCell";
-import { MazeRevealer, fillRevealQueueRandomPattern } from "./MazeRevealPatterns";
+import {
+  MazeRevealer,
+  fillRevealQueueRandomPattern,
+} from "./MazeRevealPatterns";
 import { CELL_TRANSITIONS, pickCellTransition } from "./CellTransitions";
 import { COLOR_SHADES } from "../../utils/ColorPalette";
 import { generateMaze } from "../../utils/MazeGenerator";
@@ -8,7 +11,7 @@ import { engine } from "../../getEngine";
 export function generateAndDisplayMaze(
   mainScreen: any, // MainScreen instance
   width: number,
-  height: number
+  height: number,
 ): MazeCell[][] {
   mainScreen.mainContainer.removeChildren();
 
@@ -31,15 +34,10 @@ export function generateAndDisplayMaze(
     fillRevealQueueRandomPattern,
     (x: number, y: number) => {
       const type = mainScreen.mazeData[y][x];
-      const colorShades = type === "wall" ? COLOR_SHADES.DARK_GRAY : COLOR_SHADES.YELLOW_GREEN;
+      const colorShades =
+        type === "wall" ? COLOR_SHADES.DARK_GRAY : COLOR_SHADES.YELLOW_GREEN;
       const shadeIndex = 0;
-      const cell = new MazeCell(
-        colorShades,
-        shadeIndex,
-        32,
-        x * 32,
-        y * 32
-      );
+      const cell = new MazeCell(colorShades, shadeIndex, 32, x * 32, y * 32);
       cell.interactive = type !== "wall";
       if (type !== "wall") {
         mainScreen.setupCellInteractions(cell, x, y);
@@ -48,7 +46,7 @@ export function generateAndDisplayMaze(
       if (!cellGroups[y]) cellGroups[y] = [];
       cellGroups[y][x] = cell;
       CELL_TRANSITIONS[mainScreen.cellTransitionKey](cell);
-    }
+    },
   );
   mainScreen.mazeRevealer.start();
 
