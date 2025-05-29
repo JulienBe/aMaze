@@ -119,6 +119,7 @@ export class MainScreen extends Container {
     this.raycastUIContainer.removeChildren();
     const buttonSize = 48;
     const padding = 12;
+    const bottomMargin = 32;
     // Store intervals for each key
     const buttonIntervals: Record<string, NodeJS.Timeout | null> = {};
     const makeButton = (label: string, x: number, y: number, key: string) => {
@@ -176,31 +177,25 @@ export class MainScreen extends Container {
     };
     // Layout: Up, Down, Left, Right
     const centerX = (engine().renderer.width || window.innerWidth) / 2;
-    const baseY =
-      (engine().renderer.height || window.innerHeight) -
-      buttonSize * 2 -
-      padding * 5;
+    const downY = window.innerHeight - buttonSize - bottomMargin;
+    const upY = downY - buttonSize - padding * 2;
+    const sideY = downY - (buttonSize + padding);
     // Up
-    makeButton("↑", centerX - buttonSize / 2, baseY, "w");
+    makeButton("↑", centerX - buttonSize / 2, upY, "w");
     // Down
-    makeButton(
-      "↓",
-      centerX - buttonSize / 2,
-      baseY + buttonSize + padding * 2,
-      "s",
-    );
+    makeButton("↓", centerX - buttonSize / 2, downY, "s");
     // Left
     makeButton(
       "←",
       centerX - buttonSize - padding * 4,
-      baseY + buttonSize + padding,
+      sideY,
       "a",
     );
     // Right
     makeButton(
       "→",
       centerX + buttonSize + padding * 4 - buttonSize,
-      baseY + buttonSize + padding,
+      sideY,
       "d",
     );
   }
