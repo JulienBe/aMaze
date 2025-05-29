@@ -178,8 +178,7 @@ export class Raycaster extends Container {
       ) {
         const cell = this.cellGroups[lastPathY][lastPathX];
         // Use the cell's current shade
-        wallColor =
-          cell.shades[cell.shadeIndex] ?? COLOR_SHADES.YELLOW_GREEN[0];
+        wallColor = cell.shades[cell.shadeIndex] ?? COLOR_SHADES.YELLOW_GREEN[0];
       } else {
         // fallback to MazeCellType color
         let colorKey: keyof typeof COLOR_SHADES = "YELLOW_GREEN";

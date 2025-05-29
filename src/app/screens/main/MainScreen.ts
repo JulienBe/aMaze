@@ -67,7 +67,8 @@ export class MainScreen extends Container {
       (isRaycast) => this.toggleView(isRaycast),
     );
 
-    generateAndDisplayMaze(this, 15, 21);
+    this.cellGroups = generateAndDisplayMaze(this, 15, 21);
+    this.mazeManager = new MazeManager(this.cellGroups);
   }
 
   public prepare() {}
