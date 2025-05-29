@@ -62,10 +62,10 @@ export class UIScreenUIManager {
   }
 
   public resize(width: number, _height: number) {
-    this.settingsButton.x = width - 30;
-    this.settingsButton.y = 30;
-    this.toggleViewButton.x = width - 80;
-    this.toggleViewButton.y = 30;
+    this.settingsButton.x = width - 80;
+    this.settingsButton.y = 80;
+    this.toggleViewButton.x = width - 130;
+    this.toggleViewButton.y = 80;
     this.toggleViewButton.visible = true; // Always visible
   }
 
