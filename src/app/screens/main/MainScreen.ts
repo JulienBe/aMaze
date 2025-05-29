@@ -4,9 +4,7 @@ import { engine } from "../../getEngine";
 import { PausePopup } from "../../popups/PausePopup";
 import { MazeCellType, generateMaze } from "../../utils/MazeGenerator";
 import { MazeCell } from "./MazeCell";
-import { MazeRevealer } from "./MazeRevealPatterns";
 import { generateAndDisplayMaze } from "./MazeDisplayUtils";
-import { EntryExitAnimator } from "./EntryExitAnimator";
 import { findShortestPath } from "./PathUtils";
 import { PathAnimator } from "./PathAnimator";
 import { UIScreenUIManager } from "./UIScreenUIManager";
@@ -26,7 +24,6 @@ export class MainScreen extends Container {
 
   private mazeManager?: MazeManager;
 
-  private entryExitAnimator = new EntryExitAnimator();
   private pathAnimator = new PathAnimator();
 
   private isMouseDown = false;
@@ -93,7 +90,6 @@ export class MainScreen extends Container {
 
   private mazeData: MazeCellType[][] = [];
 
-  private mazeRevealer?: MazeRevealer;
 
   private generateAndDisplayMaze(width: number, height: number) {
     this.mazeData = generateMaze(width, height);
@@ -101,7 +97,6 @@ export class MainScreen extends Container {
     this.mazeManager = new MazeManager(this.cellGroups);
   }
 
-  private cellTransitionKey: string = "shade";
 
   public setupCellInteractions(cell: MazeCell, x: number, y: number) {
     if (!this.mazeManager) return;

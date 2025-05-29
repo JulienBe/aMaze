@@ -31,7 +31,7 @@ export class Raycaster extends Container {
 
   constructor(
     maze: MazeCellType[][],
-    cellSize = 32,
+    _cellSize = 32,
     width = 640,
     height = 400,
     cellGroups?: MazeCell[][],

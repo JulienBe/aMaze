@@ -1,6 +1,5 @@
 import { MazeCell } from "./MazeCell";
 import { COLOR_SHADES } from "../../utils/ColorPalette";
-import { findShortestPath } from "./PathUtils";
 
 export class MazeManager {
   private groupCounter = 1;
